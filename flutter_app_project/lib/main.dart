@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'pages/settings_page.dart';
 import 'pages/practice_page.dart';
-import 'pages/stats_page.dart';
+import 'pages/statistics_page.dart';
 import 'pages/history_page.dart';
 
 void main() => runApp(const MyApp());
