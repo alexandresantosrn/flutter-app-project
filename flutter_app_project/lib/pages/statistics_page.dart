@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/app_logger.dart';
+import '../utils/config_logger.dart';
 
 class StatsPage extends StatelessWidget {
   const StatsPage({super.key});

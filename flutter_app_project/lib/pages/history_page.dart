@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/app_logger.dart';
+import '../utils/config_logger.dart';
 
 class HistoryPage extends StatelessWidget {
   const HistoryPage({super.key});

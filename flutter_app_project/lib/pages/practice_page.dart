@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/app_logger.dart';
+import '../utils/config_logger.dart';
 
 class PracticePage extends StatelessWidget {
   const PracticePage({super.key});
