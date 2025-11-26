@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../utils/config_logger.dart';
 
-class StatsPage extends StatelessWidget {
-  const StatsPage({super.key});
+class StatisticsPage extends StatelessWidget {
+  const StatisticsPage({super.key});
 
   @override
   Widget build(BuildContext context) {

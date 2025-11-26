@@ -53,7 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   static final List<Widget> _pages = <Widget>[
     const SettingsPage(),
     const PracticePage(),
-    const StatsPage(),
+    const StatisticsPage(),
     const HistoryPage(),
   ];
 
