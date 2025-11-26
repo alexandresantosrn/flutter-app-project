@@ -3,6 +3,7 @@ import 'pages/settings_page.dart';
 import 'pages/practice_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/history_page.dart';
+import 'utils/theme_notifier.dart';
 
 void main() => runApp(const MyApp());
 
@@ -14,27 +15,52 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Language App',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: primaryDark),
-        primaryColor: primaryDark,
-        scaffoldBackgroundColor: backgroundLight,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: primaryDark,
-          foregroundColor: Colors.white,
-          elevation: 2,
-        ),
-        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-          backgroundColor: primaryDark,
-          selectedItemColor: Colors.white,
-          unselectedItemColor: Colors.white70,
-          selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
-          type: BottomNavigationBarType.fixed,
-        ),
+    final lightTheme = ThemeData(
+      colorScheme: ColorScheme.fromSeed(seedColor: primaryDark),
+      primaryColor: primaryDark,
+      scaffoldBackgroundColor: backgroundLight,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: primaryDark,
+        foregroundColor: Colors.white,
+        elevation: 2,
       ),
-      home: const HomeScreen(),
-      debugShowCheckedModeBanner: false,
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: primaryDark,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.w600),
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+
+    final darkTheme = ThemeData.dark().copyWith(
+      colorScheme: ColorScheme.fromSeed(
+          seedColor: primaryDark, brightness: Brightness.dark),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: primaryDark,
+        foregroundColor: Colors.white,
+        elevation: 2,
+      ),
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: primaryDark,
+        selectedItemColor: Colors.white,
+        unselectedItemColor: Colors.white70,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: themeModeNotifier,
+      builder: (context, mode, _) {
+        return MaterialApp(
+          title: 'Language App',
+          theme: lightTheme,
+          darkTheme: darkTheme,
+          themeMode: mode,
+          home: const HomeScreen(),
+          debugShowCheckedModeBanner: false,
+        );
+      },
     );
   }
 }
@@ -47,7 +73,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // 0 = Configurações (padrão)
   int _currentIndex = 0;
 
   static final List<Widget> _pages = <Widget>[
