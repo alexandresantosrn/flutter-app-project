@@ -13,6 +13,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String _notificationTime = '08:00';
   bool _darkMode = false;
   int _dailyLessonSize = 10;
+  String _language = 'Inglês';
 
   late final List<String> _halfHourTimes;
 
@@ -142,10 +143,15 @@ class _SettingsPageState extends State<SettingsPage> {
     logger.i('Tamanho da lição diária: $value palavras');
   }
 
+  void _onLanguageChanged(String value) {
+    setState(() => _language = value);
+    logger.i('Idioma selecionado: $_language');
+  }
+
   void _saveSettings() {
     logger.i('Salvar configurações: notifications=$_notificationsEnabled, '
         'notificationTime=$_notificationTime, '
-        'darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize');
+        'darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize, language=$_language');
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Configurações salvas')),
     );
@@ -184,6 +190,40 @@ class _SettingsPageState extends State<SettingsPage> {
         buildButton(10),
         buildButton(15),
       ],
+    );
+  }
+
+  Widget _buildLanguageButtons(BuildContext context) {
+    final theme = Theme.of(context);
+    final selectedColor = theme.colorScheme.primary;
+    final unselectedBg = Colors.grey.shade200;
+    final unselectedFg = Colors.black87;
+    final options = ['Espanhol', 'Francês', 'Inglês'];
+
+    Widget buildButton(String value) {
+      final isSelected = _language == value;
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+          child: ElevatedButton(
+            onPressed: () => _onLanguageChanged(value),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isSelected ? selectedColor : unselectedBg,
+              foregroundColor: isSelected ? Colors.white : unselectedFg,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 14),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: options.map(buildButton).toList(),
     );
   }
 
@@ -290,6 +330,15 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
 
         const SizedBox(height: 18),
+
+        // Idioma posicionado acima dos botões da lição diária
+        const Padding(
+          padding: EdgeInsets.only(bottom: 10.0),
+          child: Text('Idioma'),
+        ),
+        _buildLanguageButtons(context),
+
+        const SizedBox(height: 16),
 
         const Padding(
           padding: EdgeInsets.only(bottom: 10.0),
