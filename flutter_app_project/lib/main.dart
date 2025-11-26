@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'pages/settings_page.dart';
+import 'pages/practice_page.dart';
+import 'pages/stats_page.dart';
+import 'pages/history_page.dart';
 
 void main() => runApp(const MyApp());
 
@@ -47,10 +51,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   static final List<Widget> _pages = <Widget>[
-    const SimpleCenteredScreen(title: 'Configurações'),
-    const SimpleCenteredScreen(title: 'Praticar'),
-    const SimpleCenteredScreen(title: 'Estatísticas'),
-    const SimpleCenteredScreen(title: 'Histórico'),
+    const SettingsPage(),
+    const PracticePage(),
+    const StatsPage(),
+    const HistoryPage(),
   ];
 
   void _onItemTapped(int index) {
