@@ -299,7 +299,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
         const SizedBox(height: 8),
 
-        // Legenda solicitada abaixo dos botões da lição
+        // Legenda dos botões da lição
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
           child: Text(
