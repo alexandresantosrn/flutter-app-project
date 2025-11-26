@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import '../utils/app_logger.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
+    logger.i('Abrindo tela: Configurações');
     return const Center(
       child: Text(
         'Configurações',
