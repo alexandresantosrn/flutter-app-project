@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/config_logger.dart';
+import '../utils/theme_notifier.dart';
+import '../utils/preferences_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -13,6 +15,7 @@ class _SettingsPageState extends State<SettingsPage> {
   String _notificationTime = '08:00';
   bool _darkMode = false;
   int _dailyLessonSize = 10;
+  String _language = 'Inglês';
 
   late final List<String> _halfHourTimes;
 
@@ -24,16 +27,37 @@ class _SettingsPageState extends State<SettingsPage> {
         for (int m in [0, 30])
           ('${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}')
     ];
+    _loadPreferences();
     logger.i('Configurações: inicializando SettingsPage');
+  }
+
+  Future<void> _loadPreferences() async {
+    // PreferencesService já inicializada em main
+    setState(() {
+      _notificationsEnabled = PreferencesService.notificationsEnabled;
+      _notificationTime = PreferencesService.notificationTime;
+      _darkMode = PreferencesService.darkMode;
+      _dailyLessonSize = PreferencesService.dailyLessonSize;
+      _language = PreferencesService.language;
+    });
   }
 
   void _onNotificationsChanged(bool value) {
     setState(() => _notificationsEnabled = value);
+    PreferencesService.setNotificationsEnabled(value);
     logger.i('Notificações: ${value ? "Habilitadas" : "Desabilitadas"}');
+  }
+
+  void _onDarkModeChanged(bool value) {
+    setState(() => _darkMode = value);
+    PreferencesService.setDarkMode(value);
+    themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+    logger.i('Modo noturno: ${value ? "Ativado" : "Desativado"}');
   }
 
   void _onTimeChanged(String value) {
     setState(() => _notificationTime = value);
+    PreferencesService.setNotificationTime(value);
     logger.i('Horário selecionado: $_notificationTime');
   }
 
@@ -93,9 +117,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       final t = _halfHourTimes[index];
                       final selected = t == tempSelection;
                       return ListTile(
-                        onTap: () {
-                          setModalState(() => tempSelection = t);
-                        },
+                        onTap: () => setModalState(() => tempSelection = t),
                         title: Center(
                           child: Text(
                             t,
@@ -132,23 +154,24 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  void _onDarkModeChanged(bool value) {
-    setState(() => _darkMode = value);
-    logger.i('Modo noturno: ${value ? "Ativado" : "Desativado"}');
-  }
-
   void _onLessonSizeChanged(int value) {
     setState(() => _dailyLessonSize = value);
+    PreferencesService.setDailyLessonSize(value);
     logger.i('Tamanho da lição diária: $value palavras');
   }
 
+  void _onLanguageChanged(String value) {
+    setState(() => _language = value);
+    PreferencesService.setLanguage(value);
+    logger.i('Idioma selecionado: $_language');
+  }
+
   void _saveSettings() {
-    logger.i('Salvar configurações: notifications=$_notificationsEnabled, '
-        'notificationTime=$_notificationTime, '
-        'darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Configurações salvas')),
-    );
+    // já persistido em cada ação — mantém snackbar como confirmação
+    logger.i(
+        'Salvar configurações (confirm): notifications=$_notificationsEnabled, notificationTime=$_notificationTime, darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize, language=$_language');
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Configurações salvas')));
   }
 
   Widget _buildLessonSizeButtons(BuildContext context) {
@@ -169,36 +192,56 @@ class _SettingsPageState extends State<SettingsPage> {
               foregroundColor: isSelected ? Colors.white : unselectedFg,
               padding: const EdgeInsets.symmetric(vertical: 16),
             ),
-            child: Text(
-              '$value',
-              style: const TextStyle(fontSize: 16),
-            ),
+            child: Text('$value', style: const TextStyle(fontSize: 16)),
           ),
         ),
       );
     }
 
-    return Row(
-      children: [
-        buildButton(5),
-        buildButton(10),
-        buildButton(15),
-      ],
-    );
+    return Row(children: [buildButton(5), buildButton(10), buildButton(15)]);
+  }
+
+  Widget _buildLanguageButtons(BuildContext context) {
+    final theme = Theme.of(context);
+    final selectedColor = theme.colorScheme.primary;
+    final unselectedBg = Colors.grey.shade200;
+    final unselectedFg = Colors.black87;
+    final options = ['Espanhol', 'Francês', 'Inglês'];
+
+    Widget buildButton(String value) {
+      final isSelected = _language == value;
+      return Expanded(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6.0),
+          child: ElevatedButton(
+            onPressed: () => _onLanguageChanged(value),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isSelected ? selectedColor : unselectedBg,
+              foregroundColor: isSelected ? Colors.white : unselectedFg,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
+            child: Text(value,
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14)),
+          ),
+        ),
+      );
+    }
+
+    return Row(children: options.map(buildButton).toList());
   }
 
   @override
   Widget build(BuildContext context) {
     final enabled = _notificationsEnabled;
+    const sectionSpacing = 18.0;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 28),
       children: [
         const Padding(
-          padding: EdgeInsets.only(top: 8.0, bottom: 16.0),
-          child: Text(
-            'Configurações',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
+          padding: EdgeInsets.only(top: 8.0, bottom: 18.0),
+          child: Text('Configurações',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         ),
 
         // Notificações com subtitle
@@ -210,7 +253,7 @@ class _SettingsPageState extends State<SettingsPage> {
           onChanged: _onNotificationsChanged,
         ),
 
-        const SizedBox(height: 12),
+        const SizedBox(height: sectionSpacing),
 
         // Linha inteira fica "desativada" (efeito cinza) quando notifications off
         IgnorePointer(
@@ -218,7 +261,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Opacity(
             opacity: enabled ? 1.0 : 0.5,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
               decoration: BoxDecoration(
                 color: enabled ? Colors.transparent : Colors.grey.shade100,
                 borderRadius: BorderRadius.circular(6),
@@ -226,45 +269,35 @@ class _SettingsPageState extends State<SettingsPage> {
               child: Row(
                 children: [
                   const Expanded(
-                    child: Text(
-                      'Horário de Notificação',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
-                  // campo compacto: valor + ícone ao lado
+                      child: Text('Horário de Notificação',
+                          style: TextStyle(fontSize: 16))),
                   GestureDetector(
                     onTap: _openTimeSelector,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 10.0, vertical: 8.0),
+                          horizontal: 12.0, vertical: 10.0),
                       decoration: BoxDecoration(
-                        color: Colors.transparent,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(6)),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ConstrainedBox(
-                            constraints: const BoxConstraints(
-                                minWidth: 56, maxWidth: 96),
-                            child: Text(
-                              _notificationTime,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: enabled
-                                    ? Colors.black87
-                                    : Colors.grey.shade600,
-                                fontSize: 16,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.expand_more,
-                            size: 22,
-                            color:
-                                enabled ? Colors.black54 : Colors.grey.shade600,
-                          ),
+                              constraints: const BoxConstraints(
+                                  minWidth: 56, maxWidth: 96),
+                              child: Text(_notificationTime,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      color: enabled
+                                          ? Colors.black87
+                                          : Colors.grey.shade600,
+                                      fontSize: 16))),
+                          const SizedBox(width: 8),
+                          Icon(Icons.expand_more,
+                              size: 22,
+                              color: enabled
+                                  ? Colors.black54
+                                  : Colors.grey.shade600),
                         ],
                       ),
                     ),
@@ -275,11 +308,11 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: sectionSpacing),
 
-        const Divider(height: 24),
+        const Divider(height: 1),
 
-        const SizedBox(height: 8),
+        const SizedBox(height: sectionSpacing - 6),
 
         SwitchListTile(
           contentPadding: EdgeInsets.zero,
@@ -289,27 +322,29 @@ class _SettingsPageState extends State<SettingsPage> {
           onChanged: _onDarkModeChanged,
         ),
 
-        const SizedBox(height: 18),
+        const SizedBox(height: sectionSpacing),
 
         const Padding(
-          padding: EdgeInsets.only(bottom: 10.0),
-          child: Text('Tamanho da lição diária'),
-        ),
+            padding: EdgeInsets.only(bottom: 10.0), child: Text('Idioma')),
+        _buildLanguageButtons(context),
+
+        const SizedBox(height: sectionSpacing),
+
+        const Padding(
+            padding: EdgeInsets.only(bottom: 10.0),
+            child: Text('Tamanho da lição diária')),
         _buildLessonSizeButtons(context),
 
         const SizedBox(height: 8),
 
-        // Legenda dos botões da lição
         Padding(
           padding: const EdgeInsets.only(top: 8.0, bottom: 8.0),
-          child: Text(
-            'Limite máximo: 15 palavras por lição',
-            style: Theme.of(context).textTheme.bodySmall,
-            textAlign: TextAlign.center,
-          ),
+          child: Text('Limite máximo: 15 palavras por lição',
+              style: Theme.of(context).textTheme.bodySmall,
+              textAlign: TextAlign.center),
         ),
 
-        const SizedBox(height: 28),
+        const SizedBox(height: 24),
 
         Center(
           child: SizedBox(
