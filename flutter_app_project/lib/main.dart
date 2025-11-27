@@ -4,8 +4,15 @@ import 'pages/practice_page.dart';
 import 'pages/statistics_page.dart';
 import 'pages/history_page.dart';
 import 'utils/theme_notifier.dart';
+import 'utils/preferences_service.dart';
 
-void main() => runApp(const MyApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await PreferencesService.init();
+  themeModeNotifier.value =
+      PreferencesService.darkMode ? ThemeMode.dark : ThemeMode.light;
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
   static const Color primaryDark = Color(0xFF0B3D91);
@@ -41,7 +48,7 @@ class MyApp extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 2,
       ),
-      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: primaryDark,
         selectedItemColor: Colors.white,
         unselectedItemColor: Colors.white70,

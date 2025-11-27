@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/config_logger.dart';
 import '../utils/theme_notifier.dart';
+import '../utils/preferences_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -26,25 +27,37 @@ class _SettingsPageState extends State<SettingsPage> {
         for (int m in [0, 30])
           ('${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}')
     ];
+    _loadPreferences();
     logger.i('Configurações: inicializando SettingsPage');
+  }
+
+  Future<void> _loadPreferences() async {
+    // PreferencesService já inicializada em main
+    setState(() {
+      _notificationsEnabled = PreferencesService.notificationsEnabled;
+      _notificationTime = PreferencesService.notificationTime;
+      _darkMode = PreferencesService.darkMode;
+      _dailyLessonSize = PreferencesService.dailyLessonSize;
+      _language = PreferencesService.language;
+    });
   }
 
   void _onNotificationsChanged(bool value) {
     setState(() => _notificationsEnabled = value);
+    PreferencesService.setNotificationsEnabled(value);
     logger.i('Notificações: ${value ? "Habilitadas" : "Desabilitadas"}');
   }
 
-  // Ao mudar o modo noturno, atualiza o notifier global para alterar o tema do app.
   void _onDarkModeChanged(bool value) {
-    setState(() {
-      _darkMode = value;
-    });
+    setState(() => _darkMode = value);
+    PreferencesService.setDarkMode(value);
     themeModeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
     logger.i('Modo noturno: ${value ? "Ativado" : "Desativado"}');
   }
 
   void _onTimeChanged(String value) {
     setState(() => _notificationTime = value);
+    PreferencesService.setNotificationTime(value);
     logger.i('Horário selecionado: $_notificationTime');
   }
 
@@ -143,21 +156,22 @@ class _SettingsPageState extends State<SettingsPage> {
 
   void _onLessonSizeChanged(int value) {
     setState(() => _dailyLessonSize = value);
+    PreferencesService.setDailyLessonSize(value);
     logger.i('Tamanho da lição diária: $value palavras');
   }
 
   void _onLanguageChanged(String value) {
     setState(() => _language = value);
+    PreferencesService.setLanguage(value);
     logger.i('Idioma selecionado: $_language');
   }
 
   void _saveSettings() {
-    logger.i('Salvar configurações: notifications=$_notificationsEnabled, '
-        'notificationTime=$_notificationTime, darkMode=$_darkMode, '
-        'dailyLessonSize=$_dailyLessonSize, language=$_language');
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Configurações salvas')),
-    );
+    // já persistido em cada ação — mantém snackbar como confirmação
+    logger.i(
+        'Salvar configurações (confirm): notifications=$_notificationsEnabled, notificationTime=$_notificationTime, darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize, language=$_language');
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Configurações salvas')));
   }
 
   Widget _buildLessonSizeButtons(BuildContext context) {
@@ -269,8 +283,8 @@ class _SettingsPageState extends State<SettingsPage> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           ConstrainedBox(
-                              constraints:
-                                  BoxConstraints(minWidth: 56, maxWidth: 96),
+                              constraints: const BoxConstraints(
+                                  minWidth: 56, maxWidth: 96),
                               child: Text(_notificationTime,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
