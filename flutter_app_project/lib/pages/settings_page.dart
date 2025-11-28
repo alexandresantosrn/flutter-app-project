@@ -178,7 +178,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Theme.of(context);
     final selectedColor = theme.colorScheme.primary;
     final unselectedBg = Colors.grey.shade200;
-    final unselectedFg = Colors.black87;
+    const unselectedFg = Colors.black87;
 
     Widget buildButton(int value) {
       final isSelected = _dailyLessonSize == value;
@@ -205,7 +205,7 @@ class _SettingsPageState extends State<SettingsPage> {
     final theme = Theme.of(context);
     final selectedColor = theme.colorScheme.primary;
     final unselectedBg = Colors.grey.shade200;
-    final unselectedFg = Colors.black87;
+    const unselectedFg = Colors.black87;
     final options = ['Espanhol', 'Francês', 'Inglês'];
 
     Widget buildButton(String value) {
