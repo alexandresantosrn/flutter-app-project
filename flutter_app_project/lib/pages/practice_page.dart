@@ -5,6 +5,8 @@ import '../utils/config_logger.dart';
 import '../utils/preferences_service.dart';
 import '../utils/quiz_card.dart';
 import '../utils/seed_questions.dart';
+import '../utils/stats_db.dart';
+import '../models/practice_stat.dart';
 
 class PracticePage extends StatefulWidget {
   const PracticePage({super.key});
@@ -27,6 +29,7 @@ class _PracticePageState extends State<PracticePage> {
   int? _selectedOptionIndex;
   bool _loading = true;
   bool _finished = false;
+  bool _savedStat = false;
 
   @override
   void initState() {
@@ -149,11 +152,25 @@ class _PracticePageState extends State<PracticePage> {
       if (isCorrect) _correct++;
     });
 
-    Timer(const Duration(milliseconds: 800), () {
+    Timer(const Duration(milliseconds: 800), () async {
       if (_currentIndex + 1 >= _sessionQuestions.length) {
         setState(() {
           _finished = true;
         });
+        // salva estatística apenas uma vez
+        if (!_savedStat) {
+          _savedStat = true;
+          final stat = PracticeStat(
+            timestamp: DateTime.now().millisecondsSinceEpoch,
+            language: _language,
+            total: _sessionQuestions.length,
+            correct: _correct,
+            percent: (_sessionQuestions.isNotEmpty)
+                ? (_correct / _sessionQuestions.length) * 100.0
+                : 0.0,
+          );
+          await StatsDb.insertStat(stat);
+        }
       } else {
         setState(() {
           _currentIndex++;
