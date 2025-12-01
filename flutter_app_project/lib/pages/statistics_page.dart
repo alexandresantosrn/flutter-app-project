@@ -44,11 +44,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
     );
   }
 
-  // simples "grafico" de barras horizontais para últimas sessões
-  Widget _buildRecentBars(List<PracticeStat> recent) {
+  Widget _buildRecentBars(BuildContext ctx, List<PracticeStat> recent) {
     if (recent.isEmpty) return const SizedBox.shrink();
     final maxPercent =
         recent.map((s) => s.percent).fold<double>(0.0, (p, e) => e > p ? e : p);
+    final screenW = MediaQuery.of(ctx).size.width;
+    final tsWidth = (screenW * 0.35).clamp(80.0, 120.0);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -64,9 +66,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
             child: Row(
               children: [
                 SizedBox(
-                  width: 120,
+                  width: tsWidth,
                   child: Text('${_formatTimestamp(s.timestamp)}',
-                      style: const TextStyle(fontSize: 12)),
+                      style: const TextStyle(fontSize: 12),
+                      overflow: TextOverflow.ellipsis),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -136,6 +139,9 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final screenW = MediaQuery.of(context).size.width;
+    final tsWidth = (screenW * 0.35).clamp(80.0, 120.0);
+
     return FutureBuilder<List<PracticeStat>>(
       future: _futureStats,
       builder: (context, snap) {
@@ -144,23 +150,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
         }
         final stats = snap.data ?? [];
         if (stats.isEmpty) {
+          // sem botão de atualizar; apenas mensagem central
           return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('Nenhum registro ainda',
-                    style: TextStyle(fontSize: 16)),
-                const SizedBox(height: 12),
-                ElevatedButton(
-                  onPressed: _load,
-                  child: const Text('Atualizar'),
-                ),
-              ],
-            ),
-          );
+              child: Text('Nenhum registro ainda',
+                  style: Theme.of(context).textTheme.bodyLarge));
         }
 
-        // cálculos agregados
         final totalSessions = stats.length;
         final avgPercent =
             stats.map((s) => s.percent).fold<double>(0.0, (p, e) => p + e) /
@@ -168,7 +163,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
         final best = stats.reduce((a, b) => a.percent >= b.percent ? a : b);
         final worst = stats.reduce((a, b) => a.percent <= b.percent ? a : b);
 
-        // distribuição por idioma
         final Map<String, int> byLang = {};
         for (var s in stats) {
           byLang[s.language] = (byLang[s.language] ?? 0) + 1;
@@ -176,7 +170,6 @@ class _StatisticsPageState extends State<StatisticsPage> {
         final langEntries = byLang.entries.toList()
           ..sort((a, b) => b.value.compareTo(a.value));
 
-        // últimas 7 sessões
         final recent = stats.take(7).toList();
 
         return RefreshIndicator(
@@ -188,15 +181,24 @@ class _StatisticsPageState extends State<StatisticsPage> {
             padding: const EdgeInsets.all(12),
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Estatísticas',
-                      style:
-                          TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
-                  IconButton(
+                  Expanded(
+                    child: Text('Estatísticas',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w700),
+                        overflow: TextOverflow.ellipsis),
+                  ),
+                  ConstrainedBox(
+                    constraints:
+                        const BoxConstraints.tightFor(width: 40, height: 40),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      iconSize: 22,
                       icon: const Icon(Icons.delete_sweep),
                       onPressed: _confirmClearAll,
-                      tooltip: 'Apagar todo o histórico'),
+                      tooltip: 'Apagar todo o histórico',
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -237,7 +239,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                   ),
                 ),
               const SizedBox(height: 12),
-              _buildRecentBars(recent),
+              _buildRecentBars(context, recent),
               const SizedBox(height: 20),
               const Text('Histórico completo',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),

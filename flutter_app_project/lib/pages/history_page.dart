@@ -31,6 +31,29 @@ class _HistoryPageState extends State<HistoryPage> {
     return '$date • $time';
   }
 
+  Future<void> _confirmClearAll() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Apagar histórico'),
+        content: const Text(
+            'Deseja apagar todo o histórico de sessões? Esta ação não pode ser desfeita.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(c).pop(false),
+              child: const Text('Cancelar')),
+          ElevatedButton(
+              onPressed: () => Navigator.of(c).pop(true),
+              child: const Text('Apagar')),
+        ],
+      ),
+    );
+    if (ok == true) {
+      await StatsDb.clearAll();
+      setState(_load);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<PracticeStat>>(
@@ -40,31 +63,75 @@ class _HistoryPageState extends State<HistoryPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final stats = snap.data ?? [];
+
         if (stats.isEmpty) {
-          return const Center(child: Text('Nenhum histórico salvo'));
+          // sem histórico: apenas mensagem central (sem título)
+          return const Center(
+            child:
+                Text('Nenhum histórico ainda', style: TextStyle(fontSize: 16)),
+          );
         }
-        return ListView.separated(
-          padding: const EdgeInsets.all(12),
-          itemCount: stats.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, idx) {
-            final s = stats[idx];
-            return Card(
-              child: ListTile(
-                title: Text(
-                    '${s.percent.toStringAsFixed(1)}% • ${s.correct}/${s.total}'),
-                subtitle:
-                    Text('${s.language} • ${_formatTimestamp(s.timestamp)}'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline),
-                  onPressed: () async {
-                    await StatsDb.deleteStat(s.id!);
-                    setState(_load);
-                  },
-                ),
-              ),
-            );
+
+        // quando há histórico, mostra cabeçalho + lista (titulo exibido aqui)
+        return RefreshIndicator(
+          onRefresh: () async {
+            setState(_load);
+            await _futureStats;
           },
+          child: ListView.builder(
+            padding: const EdgeInsets.all(12),
+            itemCount: stats.length + 1,
+            itemBuilder: (context, index) {
+              if (index == 0) {
+                // header exibido somente quando há histórico
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Histórico',
+                            style: TextStyle(
+                                fontSize: 20, fontWeight: FontWeight.w700),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints.tightFor(
+                              width: 40, height: 40),
+                          child: IconButton(
+                            padding: EdgeInsets.zero,
+                            iconSize: 22,
+                            icon: const Icon(Icons.delete_sweep),
+                            onPressed: _confirmClearAll,
+                            tooltip: 'Apagar todo o histórico',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+                );
+              }
+
+              final s = stats[index - 1];
+              return Card(
+                child: ListTile(
+                  title: Text(
+                      '${s.percent.toStringAsFixed(1)}% • ${s.correct}/${s.total}'),
+                  subtitle:
+                      Text('${s.language} • ${_formatTimestamp(s.timestamp)}'),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () async {
+                      await StatsDb.deleteStat(s.id!);
+                      setState(_load);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
         );
       },
     );
