@@ -197,17 +197,20 @@ class _PracticePageState extends State<PracticePage> {
       final pct = _scorePercent();
       return Center(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 28.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text('Fim do Quiz',
                   style: Theme.of(context).textTheme.headlineSmall),
               const SizedBox(height: 12),
-              Text(
-                  'Você acertou $_correct de ${_sessionQuestions.length} (${pct.toStringAsFixed(1)}%)',
+              Text('Você acertou $_correct de ${_sessionQuestions.length}',
                   style: const TextStyle(fontSize: 18)),
-              const SizedBox(height: 18),
+              const SizedBox(height: 8),
+              Text('Percentual: ${pct.toStringAsFixed(1)}%',
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
               ElevatedButton(
                   onPressed: _restart, child: const Text('Recomeçar')),
             ],
@@ -235,31 +238,87 @@ class _PracticePageState extends State<PracticePage> {
     final options = _buildOptionsForCurrent();
     final correctIndex = _correctIndexCache[_currentIndex];
 
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
-          Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                  'Pergunta ${_currentIndex + 1} / ${_sessionQuestions.length}',
-                  style: const TextStyle(fontSize: 14))),
-          const SizedBox(height: 12),
-          QuizCard(
-            portuguese: q.portuguese,
-            options: options,
-            selectedIndex: _selectedOptionIndex,
-            correctIndex: _selectedOptionIndex == null ? null : correctIndex,
-            enabled: _selectedOptionIndex == null,
-            onOptionSelected: _onOptionSelected,
-          ),
-          const Spacer(),
-          Align(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final mq = MediaQuery.of(context);
+        final availableHeight =
+            constraints.maxHeight - mq.padding.top - mq.padding.bottom;
+
+        // Thresholds ajustáveis:
+        const compactThreshold = 520.0; // abaixo disso usamos layout compacto
+        final isCompact = availableHeight < compactThreshold;
+
+        // altura reservada para header + footer
+        const headerApprox = 56.0;
+        const footerApprox = 44.0;
+        final reserved = headerApprox + footerApprox + 32.0; // +padding
+        // altura máxima para o QuizCard em modo compacto
+        final maxCardHeight =
+            (availableHeight - reserved).clamp(120.0, availableHeight * 0.85);
+
+        final header = Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Pergunta ${_currentIndex + 1} / ${_sessionQuestions.length}',
+                style: const TextStyle(fontSize: 14)),
+            const SizedBox(height: 12),
+          ],
+        );
+
+        final footer = Padding(
+          padding: const EdgeInsets.only(top: 12.0),
+          child: Align(
               alignment: Alignment.centerLeft,
               child: Text('Acertos: $_correct',
                   style: const TextStyle(fontSize: 16))),
-        ],
-      ),
+        );
+
+        final quizCard = QuizCard(
+          portuguese: q.portuguese,
+          options: options,
+          selectedIndex: _selectedOptionIndex,
+          correctIndex: _selectedOptionIndex == null ? null : correctIndex,
+          enabled: _selectedOptionIndex == null,
+          onOptionSelected: _onOptionSelected,
+        );
+
+        if (isCompact) {
+          // modo compacto: não usar Expanded; limitar altura do card e permitir rolagem da página
+          return SafeArea(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    header,
+                    ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: maxCardHeight),
+                      child: quizCard,
+                    ),
+                    footer,
+                  ],
+                ),
+              ),
+            ),
+          );
+        } else {
+          // modo normal: usar Expanded para que o card ocupe o espaço restante
+          return SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  header,
+                  Expanded(child: quizCard),
+                  footer,
+                ],
+              ),
+            ),
+          );
+        }
+      },
     );
   }
 }

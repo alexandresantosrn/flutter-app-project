@@ -20,40 +20,41 @@ class OptionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // determina cores com contraste adequado
-    final Color bg;
-    final Color fg;
-    if (!showFeedback) {
-      bg = Colors.white;
-      fg = Colors.black87;
-    } else if (isCorrect) {
-      bg = Colors.green.shade600;
-      fg = Colors.white;
-    } else if (isSelected && !isCorrect) {
-      bg = Colors.red.shade600;
-      fg = Colors.white;
+    Color bg;
+    Color fg = Colors.black87;
+    if (showFeedback) {
+      if (isCorrect) {
+        bg = Colors.green.shade600;
+        fg = Colors.white;
+      } else if (isSelected) {
+        bg = Colors.red.shade600;
+        fg = Colors.white;
+      } else {
+        bg = Colors.grey.shade200;
+      }
     } else {
-      bg = Colors.white;
-      fg = Colors.black87;
+      bg = Colors.grey.shade100;
     }
 
-    return Card(
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    return Material(
+      color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          constraints: const BoxConstraints(minHeight: 56),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: bg,
             borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.grey.shade300),
           ),
           child: Text(
             text,
             style: TextStyle(fontSize: 16, color: fg),
-            textAlign: TextAlign.left,
+            softWrap: true,
+            overflow: TextOverflow.visible,
           ),
         ),
       ),
