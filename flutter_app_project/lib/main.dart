@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'utils/config_logger.dart';
 import 'pages/settings_page.dart';
 import 'pages/practice_page.dart';
 import 'pages/statistics_page.dart';
@@ -8,9 +9,13 @@ import 'utils/preferences_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  logger.i('Inicializando aplicação');
   await PreferencesService.init();
+  logger.i(
+      'PreferencesService.init concluído -> darkMode=${PreferencesService.darkMode}, language=${PreferencesService.language}, dailyLessonSize=${PreferencesService.dailyLessonSize}');
   themeModeNotifier.value =
       PreferencesService.darkMode ? ThemeMode.dark : ThemeMode.light;
+  logger.d('themeModeNotifier definido -> ${themeModeNotifier.value}');
   runApp(const MyApp());
 }
 
@@ -59,6 +64,7 @@ class MyApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: themeModeNotifier,
       builder: (context, mode, _) {
+        logger.d('MyApp.build -> construindo MaterialApp (themeMode=$mode)');
         return MaterialApp(
           title: 'Language App',
           theme: lightTheme,

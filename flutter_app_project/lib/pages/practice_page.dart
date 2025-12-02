@@ -36,10 +36,13 @@ class _PracticePageState extends State<PracticePage> {
     super.initState();
     logger.i('Abrindo tela: Praticar');
     _allSeed = getSeedQuestions();
+    logger.d(
+        'PracticePage.initState -> seed questions carregadas: ${_allSeed.length}');
     _initQuiz();
   }
 
   Future<void> _initQuiz() async {
+    logger.d('PracticePage._initQuiz -> iniciando nova sessão');
     setState(() {
       _loading = true;
       _finished = false;
@@ -52,9 +55,13 @@ class _PracticePageState extends State<PracticePage> {
 
     _totalQuestions = PreferencesService.dailyLessonSize;
     _language = PreferencesService.language;
+    logger.i(
+        'PracticePage._initQuiz -> total=$_totalQuestions language=$_language');
 
     // seleciona sem repetição a partir do seed
     _sessionQuestions = getRandomSeedSubset(_totalQuestions);
+    logger.d(
+        'PracticePage._initQuiz -> sessão com ${_sessionQuestions.length} perguntas');
 
     // prepara cache de opções e índices corretos — gerado apenas uma vez
     _prepareOptionsCache();
@@ -62,10 +69,11 @@ class _PracticePageState extends State<PracticePage> {
     setState(() {
       _loading = false;
     });
+    logger.d('PracticePage._initQuiz -> sessão pronta (loading=false)');
   }
 
-  // Gera e armazena as 4 opções (1 correta + 3 distratores) para cada pergunta da sessão.
   void _prepareOptionsCache() {
+    logger.d('PracticePage._prepareOptionsCache -> preparando cache de opções');
     _optionsCache = List.generate(_sessionQuestions.length, (i) => <String>[]);
     _correctIndexCache = List.generate(_sessionQuestions.length, (i) => -1);
 
@@ -75,6 +83,8 @@ class _PracticePageState extends State<PracticePage> {
       final t = s.translations[_language];
       if (t != null && t.isNotEmpty) allTranslations.add(t);
     }
+    logger.d(
+        'PracticePage._prepareOptionsCache -> pool base size=${allTranslations.length}');
 
     // remove as traduções CORRETAS da sessão para evitar que sejam usadas como distratores
     for (var q in _sessionQuestions) {
@@ -92,6 +102,8 @@ class _PracticePageState extends State<PracticePage> {
       pool
         ..clear()
         ..addAll(List<String>.from(globalPoolBase)..shuffle(rnd));
+      logger.d(
+          'PracticePage._prepareOptionsCache -> pool reabastecido (size=${pool.length})');
     }
 
     // inicializa pool
@@ -103,7 +115,9 @@ class _PracticePageState extends State<PracticePage> {
       final distractors = <String>[];
 
       // garante pool suficiente; se pequeno, reabastece
-      if (pool.length < 3) refillPool();
+      if (pool.length < 3) {
+        refillPool();
+      }
 
       // escolhe distratores do pool sem reposição
       pool.shuffle(rnd);
@@ -111,8 +125,7 @@ class _PracticePageState extends State<PracticePage> {
         if (distractors.length >= 3) break;
         if (candidate == correct) continue;
         distractors.add(candidate);
-        pool.remove(
-            candidate); // evita repetir esse distrator em outras perguntas
+        pool.remove(candidate);
       }
 
       // se ainda faltar, completa a partir do seed completo (sem duplicatas)
@@ -133,7 +146,12 @@ class _PracticePageState extends State<PracticePage> {
       final options = <String>[correct, ...distractors]..shuffle(rnd);
       _optionsCache[i] = options;
       _correctIndexCache[i] = options.indexOf(correct);
+      logger.d(
+          'PracticePage._prepareOptionsCache -> pergunta[$i] options=${options.length} correctIndex=${_correctIndexCache[i]}');
     }
+
+    logger.i(
+        'PracticePage._prepareOptionsCache -> cache preparado para ${_optionsCache.length} perguntas');
   }
 
   // retorna opções já cacheadas para a pergunta atual
@@ -147,6 +165,9 @@ class _PracticePageState extends State<PracticePage> {
     final correctIdx = _correctIndexCache[_currentIndex];
     final isCorrect = idx == correctIdx;
 
+    logger.i(
+        'PracticePage._onOptionSelected -> pergunta=$_currentIndex selecionou=$idx correct=$correctIdx isCorrect=$isCorrect');
+
     setState(() {
       _selectedOptionIndex = idx;
       if (isCorrect) _correct++;
@@ -157,6 +178,9 @@ class _PracticePageState extends State<PracticePage> {
         setState(() {
           _finished = true;
         });
+        logger.i(
+            'PracticePage -> sessão finalizada acertos=$_correct de ${_sessionQuestions.length}');
+
         // salva estatística apenas uma vez
         if (!_savedStat) {
           _savedStat = true;
@@ -169,13 +193,21 @@ class _PracticePageState extends State<PracticePage> {
                 ? (_correct / _sessionQuestions.length) * 100.0
                 : 0.0,
           );
-          await StatsDb.insertStat(stat);
+          try {
+            logger.d(
+                'PracticePage -> salvando stat: ${stat.percent.toStringAsFixed(1)}% language=${stat.language}');
+            await StatsDb.insertStat(stat);
+            logger.i('PracticePage -> stat salvo com sucesso');
+          } catch (e, st) {
+            logger.e('PracticePage -> erro ao salvar stat', e, st);
+          }
         }
       } else {
         setState(() {
           _currentIndex++;
           _selectedOptionIndex = null;
         });
+        logger.d('PracticePage -> avançando para pergunta ${_currentIndex}');
       }
     });
   }
@@ -186,11 +218,14 @@ class _PracticePageState extends State<PracticePage> {
   }
 
   void _restart() {
+    logger.i('PracticePage._restart -> reiniciando quiz');
     _initQuiz();
   }
 
   @override
   Widget build(BuildContext context) {
+    logger.d(
+        'PracticePage.build -> loading=$_loading finished=$_finished currentIndex=$_currentIndex');
     if (_loading) return const Center(child: CircularProgressIndicator());
 
     if (_finished) {
