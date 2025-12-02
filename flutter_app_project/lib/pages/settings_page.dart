@@ -40,6 +40,9 @@ class _SettingsPageState extends State<SettingsPage> {
       _dailyLessonSize = PreferencesService.dailyLessonSize;
       _language = PreferencesService.language;
     });
+    // novo log informando valores carregados
+    logger.i(
+        'SettingsPage._loadPreferences -> notifications=$_notificationsEnabled, notificationTime=$_notificationTime, darkMode=$_darkMode, dailyLessonSize=$_dailyLessonSize, language=$_language');
   }
 
   void _onNotificationsChanged(bool value) {
@@ -64,6 +67,9 @@ class _SettingsPageState extends State<SettingsPage> {
   Future<void> _openTimeSelector() async {
     if (!_notificationsEnabled) return;
 
+    logger.d(
+        'SettingsPage._openTimeSelector -> abrindo seletor (enabled=$_notificationsEnabled)');
+
     final result = await showModalBottomSheet<String?>(
       context: context,
       isScrollControlled: true,
@@ -85,7 +91,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         Align(
                           alignment: Alignment.centerLeft,
                           child: TextButton(
-                            onPressed: () => Navigator.of(ctx).pop('CANCELAR'),
+                            onPressed: () {
+                              logger.d(
+                                  'SettingsPage._openTimeSelector -> modal: Cancel pressed');
+                              Navigator.of(ctx).pop('CANCELAR');
+                            },
                             child: const Text('Cancelar'),
                           ),
                         ),
@@ -99,8 +109,11 @@ class _SettingsPageState extends State<SettingsPage> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () =>
-                                Navigator.of(ctx).pop(tempSelection),
+                            onPressed: () {
+                              logger.d(
+                                  'SettingsPage._openTimeSelector -> modal: Ok pressed (selection=$tempSelection)');
+                              Navigator.of(ctx).pop(tempSelection);
+                            },
                             child: const Text('Ok'),
                           ),
                         ),
@@ -117,7 +130,12 @@ class _SettingsPageState extends State<SettingsPage> {
                       final t = _halfHourTimes[index];
                       final selected = t == tempSelection;
                       return ListTile(
-                        onTap: () => setModalState(() => tempSelection = t),
+                        onTap: () => setModalState(() {
+                          tempSelection = t;
+                          // log leve de mudança de seleção no modal
+                          logger.d(
+                              'SettingsPage._openTimeSelector -> tempSelection changed to $t');
+                        }),
                         title: Center(
                           child: Text(
                             t,

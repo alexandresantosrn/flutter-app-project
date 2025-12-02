@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/stats_db.dart';
 import '../models/practice_stat.dart';
+import '../utils/config_logger.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -15,10 +16,12 @@ class _HistoryPageState extends State<HistoryPage> {
   @override
   void initState() {
     super.initState();
+    logger.i('HistoryPage.initState');
     _load();
   }
 
   void _load() {
+    logger.d('HistoryPage._load: iniciando carregamento de histórico do DB');
     _futureStats = StatsDb.getAllStats();
   }
 
@@ -32,6 +35,8 @@ class _HistoryPageState extends State<HistoryPage> {
   }
 
   Future<void> _confirmClearAll() async {
+    logger.d(
+        'HistoryPage._confirmClearAll: solicitando confirmação para apagar todo histórico');
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -49,8 +54,13 @@ class _HistoryPageState extends State<HistoryPage> {
       ),
     );
     if (ok == true) {
+      logger.i(
+          'HistoryPage._confirmClearAll -> usuário confirmou apagar todo histórico');
       await StatsDb.clearAll();
+      logger.d('HistoryPage._confirmClearAll -> histórico apagado com sucesso');
       setState(_load);
+    } else {
+      logger.d('HistoryPage._confirmClearAll -> usuário cancelou a ação');
     }
   }
 
@@ -60,11 +70,14 @@ class _HistoryPageState extends State<HistoryPage> {
       future: _futureStats,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
+          logger.d(
+              'HistoryPage.build: aguardando dados (state=${snap.connectionState})');
           return const Center(child: CircularProgressIndicator());
         }
         final stats = snap.data ?? [];
 
         if (stats.isEmpty) {
+          logger.d('HistoryPage.build: nenhum registro no histórico');
           // sem histórico: apenas mensagem central (sem título)
           return const Center(
             child:
@@ -72,11 +85,14 @@ class _HistoryPageState extends State<HistoryPage> {
           );
         }
 
+        logger.i('HistoryPage.build: ${stats.length} registros carregados');
         // quando há histórico, mostra cabeçalho + lista (titulo exibido aqui)
         return RefreshIndicator(
           onRefresh: () async {
+            logger.d('HistoryPage.onRefresh: atualização iniciada');
             setState(_load);
             await _futureStats;
+            logger.d('HistoryPage.onRefresh: atualização concluída');
           },
           child: ListView.builder(
             padding: const EdgeInsets.all(12),
@@ -103,7 +119,11 @@ class _HistoryPageState extends State<HistoryPage> {
                             padding: EdgeInsets.zero,
                             iconSize: 22,
                             icon: const Icon(Icons.delete_sweep),
-                            onPressed: _confirmClearAll,
+                            onPressed: () {
+                              logger.d(
+                                  'HistoryPage: botão apagar todo histórico pressionado');
+                              _confirmClearAll();
+                            },
                             tooltip: 'Apagar todo o histórico',
                           ),
                         ),
@@ -124,8 +144,15 @@ class _HistoryPageState extends State<HistoryPage> {
                   trailing: IconButton(
                     icon: const Icon(Icons.delete_outline),
                     onPressed: () async {
-                      await StatsDb.deleteStat(s.id!);
-                      setState(_load);
+                      if (s.id != null) {
+                        logger.i('HistoryPage: excluindo stat id=${s.id}');
+                        await StatsDb.deleteStat(s.id!);
+                        logger.d('HistoryPage: stat id=${s.id} excluído');
+                        setState(_load);
+                      } else {
+                        logger.w(
+                            'HistoryPage: tentativa de excluir stat sem id (ignorado)');
+                      }
                     },
                   ),
                 ),

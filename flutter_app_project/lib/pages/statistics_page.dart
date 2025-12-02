@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../utils/stats_db.dart';
 import '../models/practice_stat.dart';
+import '../utils/config_logger.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -15,10 +16,12 @@ class _StatisticsPageState extends State<StatisticsPage> {
   @override
   void initState() {
     super.initState();
+    logger.i('StatisticsPage.initState');
     _load();
   }
 
   void _load() {
+    logger.d('StatisticsPage._load: carregando estatísticas do DB');
     _futureStats = StatsDb.getAllStats();
   }
 
@@ -115,6 +118,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
   }
 
   Future<void> _confirmClearAll() async {
+    logger.d('StatisticsPage._confirmClearAll: solicitando confirmação');
     final ok = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -132,8 +136,13 @@ class _StatisticsPageState extends State<StatisticsPage> {
       ),
     );
     if (ok == true) {
+      logger.i(
+          'StatisticsPage._confirmClearAll -> usuário confirmou apagar todo histórico');
       await StatsDb.clearAll();
+      logger.d('StatisticsPage._confirmClearAll -> histórico apagado');
       setState(_load);
+    } else {
+      logger.d('StatisticsPage._confirmClearAll -> usuário cancelou a ação');
     }
   }
 
@@ -146,22 +155,29 @@ class _StatisticsPageState extends State<StatisticsPage> {
       future: _futureStats,
       builder: (context, snap) {
         if (snap.connectionState != ConnectionState.done) {
+          logger.d(
+              'StatisticsPage.build: aguardando dados (connectionState=${snap.connectionState})');
           return const Center(child: CircularProgressIndicator());
         }
         final stats = snap.data ?? [];
         if (stats.isEmpty) {
+          logger.d('StatisticsPage.build: sem registros de estatísticas');
           // sem botão de atualizar; apenas mensagem central
           return Center(
               child: Text('Nenhum registro ainda',
                   style: Theme.of(context).textTheme.bodyLarge));
         }
 
+        logger.i('StatisticsPage.build: ${stats.length} registros carregados');
         final totalSessions = stats.length;
         final avgPercent =
             stats.map((s) => s.percent).fold<double>(0.0, (p, e) => p + e) /
                 totalSessions;
         final best = stats.reduce((a, b) => a.percent >= b.percent ? a : b);
         final worst = stats.reduce((a, b) => a.percent <= b.percent ? a : b);
+
+        logger.i(
+            'Statistics computed -> total=$totalSessions avg=${avgPercent.toStringAsFixed(1)} best=${best.percent.toStringAsFixed(1)} worst=${worst.percent.toStringAsFixed(1)}');
 
         final Map<String, int> byLang = {};
         for (var s in stats) {
@@ -174,8 +190,10 @@ class _StatisticsPageState extends State<StatisticsPage> {
 
         return RefreshIndicator(
           onRefresh: () async {
+            logger.d('StatisticsPage.onRefresh: iniciando atualização');
             setState(_load);
             await _futureStats;
+            logger.d('StatisticsPage.onRefresh: atualização concluída');
           },
           child: ListView(
             padding: const EdgeInsets.all(12),
