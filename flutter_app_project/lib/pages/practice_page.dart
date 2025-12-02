@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:vibration/vibration.dart'; // novo
 import '../utils/config_logger.dart';
 import '../utils/preferences_service.dart';
 import '../utils/quiz_card.dart';
@@ -167,6 +169,36 @@ class _PracticePageState extends State<PracticePage> {
 
     logger.i(
         'PracticePage._onOptionSelected -> pergunta=$_currentIndex selecionou=$idx correct=$correctIdx isCorrect=$isCorrect');
+
+    // vibração/feedback háptico ao acertar
+    if (isCorrect) {
+      // Vibration plugin
+      Vibration.hasVibrator().then((has) async {
+        if (has == true) {
+          try {
+            final hasAmp = await Vibration.hasAmplitudeControl();
+            if (hasAmp) {
+              Vibration.vibrate(duration: 300, amplitude: 255);
+            } else {
+              Vibration.vibrate(duration: 300);
+            }
+            logger.d(
+                'PracticePage._onOptionSelected -> Vibration.vibrate chamada (acerto)');
+          } catch (e, st) {
+            logger.w(
+                'PracticePage._onOptionSelected -> erro ao chamar Vibration.vibrate',
+                e,
+                st);
+          }
+        } else {
+          logger
+              .d('PracticePage._onOptionSelected -> dispositivo sem vibrator');
+        }
+      }).catchError((e, st) {
+        logger.w('PracticePage._onOptionSelected -> erro ao verificar vibrator',
+            e, st);
+      });
+    }
 
     setState(() {
       _selectedOptionIndex = idx;
